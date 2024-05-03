@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+        <title>Babylon.js sample code</title>
+
+        <!-- Babylon.js -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.6.2/dat.gui.min.js"></script>
+        <script src="https://assets.babylonjs.com/generated/Assets.js"></script>
+        <script src="https://cdn.babylonjs.com/recast.js"></script>
+        <script src="https://cdn.babylonjs.com/ammo.js"></script>
+        <script src="https://cdn.babylonjs.com/havok/HavokPhysics_umd.js"></script>
+        <script src="https://cdn.babylonjs.com/cannon.js"></script>
+        <script src="https://cdn.babylonjs.com/Oimo.js"></script>
+        <script src="https://cdn.babylonjs.com/earcut.min.js"></script>
+        <script src="https://cdn.babylonjs.com/babylon.js"></script>
+        <script src="https://cdn.babylonjs.com/materialsLibrary/babylonjs.materials.min.js"></script>
+        <script src="https://cdn.babylonjs.com/proceduralTexturesLibrary/babylonjs.proceduralTextures.min.js"></script>
+        <script src="https://cdn.babylonjs.com/postProcessesLibrary/babylonjs.postProcess.min.js"></script>
+        <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.js"></script>
+        <script src="https://cdn.babylonjs.com/serializers/babylonjs.serializers.min.js"></script>
+        <script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script>
+        <script src="https://cdn.babylonjs.com/inspector/babylon.inspector.bundle.js"></script>
+
+        <style>
+            html, body {
+                overflow: hidden;
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+
+            #renderCanvas {
+                width: 100%;
+                height: 100%;
+                touch-action: none;
+            }
+            
+            #canvasZone {
+                width: 100%;
+                height: 100%;
+            }
+        </style>
+    </head>
+<body>
+    <div id="canvasZone"><canvas id="renderCanvas"></canvas></div>
+    <script>
+        var canvas = document.getElementById("renderCanvas");
+
+        var startRenderLoop = function (engine, canvas) {
+            engine.runRenderLoop(function () {
+                if (sceneToRender && sceneToRender.activeCamera) {
+                    sceneToRender.render();
+                }
+            });
+        }
+
+        var engine = null;
+        var scene = null;
+        var sceneToRender = null;
+        var createDefaultEngine = function() { return new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true,  disableWebGL2Support: false}); };
+        // set up easing types and easing modes
+        var ease = {
+            "cubic": new BABYLON.CubicEase(),
+            "quartic": new BABYLON.QuarticEase(),
+        };
+        
+        var easeMode = {
+            "in": BABYLON.EasingFunction.EASINGMODE_EASEIN,
+            "out": BABYLON.EasingFunction.EASINGMODE_EASEOUT,
+            "inOut": BABYLON.EasingFunction.EASINGMODE_EASEINOUT
+        };
+        
+        // set up animation types
+        var animationType = {
+            "vector3": BABYLON.Animation.ANIMATIONTYPE_VECTOR3,
+            "float": BABYLON.Animation.ANIMATIONTYPE_FLOAT
+        };
+        
+        /**
+         * @param {*} parameter is the target parameter for animation
+         * @param {string} animValue is the property to animate
+         * @param {string} animationType is the type of animation like float or color3
+         * @param {*} animKeys list of the keys for the animation
+         * @param {*} group is the group to add the animation to
+         * @param {*} ease use the following easing type
+         * @param {*} easeMode use the following ease mode
+         * @param {boolean} start animation for group clips
+         */
+        function playAnimation(parameter, animValue, animationType, animKeys, group, ease, easeMode, start) {
+            
+            // create animation clip
+            var paramAnim = new BABYLON.Animation("paramAnim", animValue, 60, animationType, BABYLON.Animation.ANIMATIONLOOPMODE_CYCLE);
+        
+            // set up easing
+            if (ease != null) {
+                var easingFunction = ease;
+                if (easeMode != null) {
+                    easingFunction.setEasingMode(easeMode);
+                }
+                paramAnim.setEasingFunction(easingFunction);
+            }
+        
+            // create animation
+            paramAnim.setKeys(animKeys);
+            if (group !== null) {
+                group.addTargetedAnimation(paramAnim, parameter);
+                if (start) {
+                    group.play(true);
+                }
+            }
+        }
+        
+        var createScene = function () {
+            var scene = new BABYLON.Scene(engine);
+        
+            // add an arc rotate camera
+            var camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", BABYLON.Tools.ToRadians(90), BABYLON.Tools.ToRadians(90), 3, new BABYLON.Vector3(0,0,0), scene);
+        
+            // scene clear color
+            scene.clearColor = new BABYLON.Color4.FromInts(15, 15, 15, 255);
+        
+            // new node material for loader graphic
+            var ringMat = new BABYLON.NodeMaterial("ringMat", scene, { emitComments: false });
+        
+            // load shader and call back after loaded
+            var promises = [];
+            promises.push(ringMat.loadAsync("https://models.babylonjs.com/Demos/mograph/ringShader.json"));
+            Promise.all(promises).then(function() {
+        
+                // build node material
+                ringMat.build(false);
+        
+                //clone materials
+                var dashedMat = ringMat.clone("dashedMat");
+                var scalingMat = ringMat.clone("scalingMat");
+                var rotatingMat = ringMat.clone("rotatingMat");
+                var coreMat = ringMat.clone("coreMat");
+        
+                // set up material parameters
+                var ringMatParam = {
+                    "dashAlias": ringMat.getBlockByName("dashAlias"),
+                    "dashGap": ringMat.getBlockByName("dashGap"),
+                    "dashNumber": ringMat.getBlockByName("dashNumber"),
+                    "isDashed": ringMat.getBlockByName("isDashed"),
+                    "mask": ringMat.getBlockByName("mask"),
+                    "maskRotation": ringMat.getBlockByName("maskRotation"),
+                    "switch": ringMat.getBlockByName("reverse"),
+                    "radius": ringMat.getBlockByName("radius"),
+                    "ringColor": ringMat.getBlockByName("ringColor"),
+                    "strokeAlias": ringMat.getBlockByName("strokeAlias"),
+                    "thickness": ringMat.getBlockByName("thickness")
+                };
+        
+                var dashedMatParam = {
+                    "dashAlias": dashedMat.getBlockByName("dashAlias"),
+                    "dashGap": dashedMat.getBlockByName("dashGap"),
+                    "dashNumber": dashedMat.getBlockByName("dashNumber"),
+                    "isDashed": dashedMat.getBlockByName("isDashed"),
+                    "mask": dashedMat.getBlockByName("mask"),
+                    "maskRotation": dashedMat.getBlockByName("maskRotation"),
+                    "switch": dashedMat.getBlockByName("reverse"),
+                    "radius": dashedMat.getBlockByName("radius"),
+                    "ringColor": dashedMat.getBlockByName("ringColor"),
+                    "strokeAlias": dashedMat.getBlockByName("strokeAlias"),
+                    "thickness": dashedMat.getBlockByName("thickness")
+                };
+        
+                var scalingMatParam = {
+                    "dashAlias": scalingMat.getBlockByName("dashAlias"),
+                    "dashGap": scalingMat.getBlockByName("dashGap"),
+                    "dashNumber": scalingMat.getBlockByName("dashNumber"),
+                    "isDashed": scalingMat.getBlockByName("isDashed"),
+                    "mask": scalingMat.getBlockByName("mask"),
+                    "maskRotation": scalingMat.getBlockByName("maskRotation"),
+                    "switch": scalingMat.getBlockByName("reverse"),
+                    "radius": scalingMat.getBlockByName("radius"),
+                    "ringColor": scalingMat.getBlockByName("ringColor"),
+                    "strokeAlias": scalingMat.getBlockByName("strokeAlias"),
+                    "thickness": scalingMat.getBlockByName("thickness")
+                };
+        
+                var rotatingMatParam = {
+                    "dashAlias": rotatingMat.getBlockByName("dashAlias"),
+                    "dashGap": rotatingMat.getBlockByName("dashGap"),
+                    "dashNumber": rotatingMat.getBlockByName("dashNumber"),
+                    "isDashed": rotatingMat.getBlockByName("isDashed"),
+                    "mask": rotatingMat.getBlockByName("mask"),
+                    "maskRotation": rotatingMat.getBlockByName("maskRotation"),
+                    "switch": rotatingMat.getBlockByName("reverse"),
+                    "radius": rotatingMat.getBlockByName("radius"),
+                    "ringColor": rotatingMat.getBlockByName("ringColor"),
+                    "strokeAlias": rotatingMat.getBlockByName("strokeAlias"),
+                    "thickness": rotatingMat.getBlockByName("thickness")
+                };
+        
+                var coreMatParam = {
+                    "dashAlias": coreMat.getBlockByName("dashAlias"),
+                    "dashGap": coreMat.getBlockByName("dashGap"),
+                    "dashNumber": coreMat.getBlockByName("dashNumber"),
+                    "isDashed": coreMat.getBlockByName("isDashed"),
+                    "mask": coreMat.getBlockByName("mask"),
+                    "maskRotation": coreMat.getBlockByName("maskRotation"),
+                    "switch": coreMat.getBlockByName("reverse"),
+                    "radius": coreMat.getBlockByName("radius"),
+                    "ringColor": coreMat.getBlockByName("ringColor"),
+                    "strokeAlias": coreMat.getBlockByName("strokeAlias"),
+                    "thickness": coreMat.getBlockByName("thickness")
+                };
+        
+                // graphic color
+                var graphicColor = new BABYLON.Color3.FromInts(182, 93, 14);
+        
+                // material settings
+                ringMatParam.isDashed.value = false;
+                ringMatParam.radius.value = 0.66;
+                ringMatParam.ringColor.value = graphicColor;
+                ringMatParam.strokeAlias.value = 0.01;
+                ringMatParam.thickness.value = 0.001;
+        
+                dashedMatParam.dashAlias.value = 0.9;
+                dashedMatParam.dashGap.value = 0.0;
+                dashedMatParam.dashNumber.value = 250.0;
+                dashedMatParam.isDashed.value = true;
+                dashedMatParam.radius.value = 0.7;
+                dashedMatParam.ringColor.value = graphicColor;
+                dashedMatParam.strokeAlias.value = 0.01;
+                dashedMatParam.thickness.value = 0.03;
+        
+                scalingMatParam.isDashed.value = false;
+                scalingMatParam.radius.value = 0.3;
+                scalingMatParam.ringColor.value = graphicColor;
+                scalingMatParam.strokeAlias.value = 0.01;
+                scalingMatParam.thickness.value = 0.05;
+        
+                rotatingMatParam.dashAlias.value = 0.05;
+                rotatingMatParam.dashGap.value = -0.9;
+                rotatingMatParam.dashNumber.value = 8.0;
+                rotatingMatParam.isDashed.value = true;
+                rotatingMatParam.radius.value = 0.28;
+                rotatingMatParam.ringColor.value = graphicColor;
+                rotatingMatParam.strokeAlias.value = 0.01;
+                rotatingMatParam.thickness.value = 0.1;
+        
+                coreMatParam.isDashed.value = false;
+                coreMatParam.radius.value = 0.001;
+                coreMatParam.ringColor.value = graphicColor;
+                coreMatParam.strokeAlias.value = 0.01;
+                coreMatParam.thickness.value = 0.2;
+        
+                // geometry parent
+                var root = new BABYLON.AbstractMesh("root", scene);
+        
+                // create geometry for spinner
+                var ringQuad = new BABYLON.MeshBuilder.CreatePlane("ringQuad", {size: 2}, scene);
+                ringQuad.rotation = new BABYLON.Vector3(-Math.PI, 0, -Math.PI/2);
+                ringQuad.position = new BABYLON.Vector3(0, 0, -0.3);
+                ringQuad.material = ringMat;
+                ringQuad.parent = root;
+        
+                var dashedQuad = new BABYLON.MeshBuilder.CreatePlane("dashedQuad", {size: 2}, scene);
+                dashedQuad.rotation = new BABYLON.Vector3(-Math.PI, 0, -Math.PI/2);
+                dashedQuad.position = new BABYLON.Vector3(0, 0, -0.4);
+                dashedQuad.material = dashedMat;
+                dashedQuad.parent = root;
+        
+                var scalingQuad = new BABYLON.MeshBuilder.CreatePlane("scalingQuad", {size: 2}, scene);
+                scalingQuad.rotation = new BABYLON.Vector3(-Math.PI, 0, -Math.PI/2);
+                scalingQuad.position = new BABYLON.Vector3(0, 0, -0.2);
+                scalingQuad.material = scalingMat;
+                scalingQuad.parent = root;
+        
+                var rotatingQuad = new BABYLON.MeshBuilder.CreatePlane("rotatingQuad", {size: 2}, scene);
+                rotatingQuad.rotation = new BABYLON.Vector3(-Math.PI, 0, -Math.PI/2);
+                rotatingQuad.position = new BABYLON.Vector3(0, 0, -0.1);
+                rotatingQuad.material = rotatingMat;
+                rotatingQuad.parent = root;
+        
+                var coreQuad = new BABYLON.MeshBuilder.CreatePlane("coreQuad", {size: 2}, scene);
+                coreQuad.rotation = new BABYLON.Vector3(-Math.PI, 0, -Math.PI/2);
+                coreQuad.position = new BABYLON.Vector3(0, 0, 0);
+                coreQuad.material = coreMat;
+                coreQuad.parent = root;
+        
+                // parent transform to animate graphic 3D rotation
+                root.rotation = new BABYLON.Vector3(Math.PI, Math.PI, 0);
+        
+                // set up material parameter animation keyframes
+                var ringAnimations = {
+                    "spin": [
+                        {frame: 0, value: -0.01},
+                        {frame: 240, value: 1.01},
+                        {frame: 241, value: 1.01},
+                        {frame: 480, value: -0.01}
+                    ],
+                    "switch": [
+                        {frame: 0, value: 0},
+                        {frame: 240, value: 0},
+                        {frame: 241, value: 1},
+                        {frame: 480, value: 1}
+                    ]
+                }; 
+        
+                var dashedAnimations = {
+                    "spin": [
+                        {frame: 0, value: -0.01},
+                        {frame: 60, value: 1.01},
+                        {frame: 61, value: 1.01},
+                        {frame: 120, value: -0.01}
+                    ],
+                    "switch": [
+                        {frame: 0, value: 1},
+                        {frame: 60, value: 1},
+                        {frame: 61, value: 0},
+                        {frame: 120, value: 0}
+                    ]
+                }; 
+        
+                var scalingAnimations = {
+                    "scaleRadius": [
+                        {frame: 0, value: 0.42},
+                        {frame: 180, value: 0.6},
+                        {frame: 181, value: 0.6},
+                        {frame: 240, value: 0.42}
+                    ],
+                    "scaleThickness": [
+                        {frame: 0, value: 0.05},
+                        {frame: 180, value: 0.01},
+                        {frame: 181, value: 0.01},
+                        {frame: 240, value: 0.05}
+                    ]
+                }; 
+        
+                var rotationAnimation = {
+                    "constantRotation": [
+                        {frame: 0, value: 1},
+                        {frame: 360, value: 0}
+                    ]
+                };
+        
+                var rootAnimation = {
+                    "pan": [
+                        {frame: 0, value: new BABYLON.Vector3(Math.PI, Math.PI, 0)},
+                        {frame: 40, value: new BABYLON.Vector3(Math.PI, Math.PI, 0)},
+                        {frame: 90, value: new BABYLON.Vector3(2.79, 2.3, 0)},
+                        {frame: 150, value: new BABYLON.Vector3(2.79, 2.3, 0)},
+                        {frame: 200, value: new BABYLON.Vector3(3.3, 3.9, 0)},
+                        {frame: 260, value: new BABYLON.Vector3(3.3, 3.9, 0)},
+                        {frame: 310, value: new BABYLON.Vector3(3.6, 2.3, 0)},
+                        {frame: 360, value: new BABYLON.Vector3(3.6, 2.3, 0)},
+                        {frame: 410, value: new BABYLON.Vector3(Math.PI, Math.PI, 0)}
+                    ]
+                };
+        
+                // set up animation groups
+                var loadingSpin = new BABYLON.AnimationGroup("loadingSpin", scene);
+                var rootMotion = new BABYLON.AnimationGroup("rootMotion", scene);
+        
+                // add morph target animations to animation group from glb and start animations in group
+                playAnimation(ringMatParam.mask, "value", animationType.float, ringAnimations.spin, loadingSpin, null, null, false);
+                playAnimation(ringMatParam.switch, "value", animationType.float, ringAnimations.switch, loadingSpin, null, null, false);
+                playAnimation(dashedMatParam.mask, "value", animationType.float, dashedAnimations.spin, loadingSpin, null, null, false);
+                playAnimation(dashedMatParam.switch, "value", animationType.float, dashedAnimations.switch, loadingSpin, null, null, false);
+                playAnimation(scalingMatParam.radius, "value", animationType.float, scalingAnimations.scaleRadius, loadingSpin, ease.cubic, easeMode.inOut, false);
+                playAnimation(scalingMatParam.thickness, "value", animationType.float, scalingAnimations.scaleThickness, loadingSpin, ease.cubic, easeMode.inOut, false);
+                playAnimation(rotatingMatParam.maskRotation, "value", animationType.float, rotationAnimation.constantRotation, loadingSpin, null, null, true);
+                playAnimation(root, "rotation", animationType.vector3, rootAnimation.pan, rootMotion, ease.quartic, easeMode.inOut, false);
+        
+                // GUI
+                var animationActive = false;
+                var guiLayer = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("guiLayer");
+                var rotateButton = BABYLON.GUI.Button.CreateSimpleButton("rotateButton", "Start Rotation Loop");
+                rotateButton.width = "250px";
+                rotateButton.height = "60px";
+                rotateButton.background = graphicColor.toHexString();
+                rotateButton.color = "#ffffff";
+                rotateButton.thickness = 0;
+                rotateButton.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
+                rotateButton.top = "-90px";
+                guiLayer.addControl(rotateButton);
+                rotateButton.onPointerClickObservable.add(() => {
+                    if (animationActive) {
+                        rootMotion.pause();
+                        rotateButton.textBlock.text = "Start Rotation";
+                        animationActive = false;
+                    } else {
+                        rootMotion.play(true);
+                        rotateButton.textBlock.text = "Pause Rotation";
+                        animationActive = true;
+                    }
+                });
+        
+                // show inspector and select node material
+                scene.debugLayer.show({embedMode: true});
+                scene.debugLayer.select(ringMat, "CONFIGURATION");
+            });
+        
+            return scene;
+        };
+                window.initFunction = async function() {
+                    
+                    
+                    
+                    var asyncEngineCreation = async function() {
+                        try {
+                        return createDefaultEngine();
+                        } catch(e) {
+                        console.log("the available createEngine function failed. Creating the default engine instead");
+                        return createDefaultEngine();
+                        }
+                    }
+
+                    window.engine = await asyncEngineCreation();
+        if (!engine) throw 'engine should not be null.';
+        startRenderLoop(engine, canvas);
+        window.scene = createScene();};
+        initFunction().then(() => {sceneToRender = scene                    
+        });
+
+        // Resize
+        window.addEventListener("resize", function () {
+            engine.resize();
+        });
+    </script>
+</body>
+</html>
