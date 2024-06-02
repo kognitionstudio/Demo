@@ -49,7 +49,7 @@
     </div>
     <script>
         //App configuration:
-        let debugMode = false;
+        let debugMode = true;
         let backgroundColour = "#183447"; //Change background colour here!
         let contentScale = 0.5;
         
@@ -108,7 +108,7 @@
                     model.scaling = new BABYLON.Vector3(contentScale, contentScale, contentScale);
 					
 					// Nick messing to repositioon model
-					model.position = new BABYLON.Vector3(0,0,0);
+					model.position = new BABYLON.Vector3(0,-0.5,0);
                     
                     SetGUI();
                     
