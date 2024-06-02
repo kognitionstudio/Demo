@@ -51,7 +51,7 @@
         //App configuration:
         let debugMode = false;
         let backgroundColour = "#183447"; //Change background colour here!
-        let contentScale = 0.1;
+        let contentScale = 0.2;
         
         let enablePanning = false;
         let panningSpeed = 1000; //bigger number - slower panning! 1000 default
@@ -106,7 +106,7 @@
                 BABYLON.SceneLoader.ImportMeshAsync("", "assets/3D/", "FemaleReproductiveSystem.glb").then(function (result) {
                     var model = result.meshes[0]; // Assuming the model is the first mesh in the imported result
                     model.scaling = new BABYLON.Vector3(contentScale, contentScale, contentScale);
-					// Nick messing
+					// Nick messing to repositioon model
 					model.position = new BABYLON.Vector3(0,-3,0);
                     
                     SetGUI();
