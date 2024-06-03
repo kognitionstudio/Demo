@@ -1,9 +1,9 @@
 var words = [
-    {number:1,direction:'down',row:1,column:9,clue:'Let it all hang out.',answer:'Shangalang',hint:''},
-    {number:2,direction:'across',row:2,column:1,clue:'My darling.',answer:'RabiaElahi',hint:''},
-    {number:3,direction:'across',row:5,column:2,clue:'Where we live.',answer:'Dorking',hint:''},
-    {number:4,direction:'down',row:8,column:2,clue:'Where we are going.',answer:'Barbados',hint:''},
-    {number:5,direction:'across',row:9,column:1,clue:'Where we want to live.',answer:'Barcelona',hint:''}
+    {number:1,direction:'down',row:1,column:9,clue:'What is the latest you can find the depo provera?',answer:'14weeks',hint:''},
+    {number:2,direction:'down',row:4,column:4,clue:'Which oral contraceptive pill should you stop if BMI is above 35?',answer:'Combined',hint:''},
+    {number:3,direction:'across',row:5,column:3,clue:'Which type of contraception should you stop if you have focal migraines?',answer:'Combined',hint:''},
+    {number:4,direction:'across',row:7,column:7,clue:'What is the name of the hormone in the progesterone pill with a 12 hour window?',answer:'Desogestrel',hint:''},
+    {number:5,direction:'across',row:10,column:1,clue:'What age should you stop the drop provera injection?',answer:'50years',hint:''}
     /*
 	{number:6,direction:'across',row:7,column:3,clue:'Women pitched their way to World Series runner up',answer:'softball',hint:'http://www.angelosports.com/news/2017/5/20/no-1-rambelles-clinch-trip-to-college-softball-world-series-with-6-2-win-over-texas-woman-s.aspx'},
     {number:7,direction:'down',row:7,column:7,clue:'Toastiest homecoming tradition',answer:'bonfire',hint:'http://www.angelo.edu/asu_facts/traditions.php'},
@@ -38,7 +38,7 @@ var words = [
 ];
 
 // Set global variables
-var gridSize = [10,15];     // number of squares wide, number of squares tall
+var gridSize = [17,11];     // number of squares wide, number of squares tall
 var direction = 'down';   // set initial direction to 'across'
 var markCorrect = true;     // indicates ability for answers to be marked correct. will be set to false if "show answers" is clicked
 var successShown = false;   // indicates whether the success modal has been shown
