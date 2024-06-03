@@ -127,3 +127,7 @@ table.crossword-grid {
   position: absolute;
   top: 100%;
 }
+
+.clue-tooltip-text {
+	font-size: 20px;
+}
