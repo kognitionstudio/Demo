@@ -27,7 +27,7 @@
 		<script>
         async function getMicrophonePermission() {
             try {
-					const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+					const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
 					// You can use the 'stream' object to work with the microphone data
 					console.log('Microphone access granted:', stream);
 				} 
